@@ -11,8 +11,8 @@ public class GatewayScriptModule extends AbstractScriptModule {
     }
     
     @Override
-    protected String[] getImplV3(String addr, int port, String[] OIDS, int authLevel, String user, String pass, String... params) {
-    	return NorcalSNMPDriverModule.snmpGetV3(addr, port, OIDS, authLevel, user, pass, params);
+    protected String[] getImplV3(String addr, int port, String[] OIDS, int authLevel, String user, String pass, int authProt, int privProt, String... params) {
+    	return NorcalSNMPDriverModule.snmpGetV3(addr, port, OIDS, authLevel, user, pass, authProt, authProt, params);
     }
 
 }

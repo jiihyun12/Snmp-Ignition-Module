@@ -14,7 +14,7 @@ plugins {
 val sdk_version by extra("8.1.20")
 
 allprojects {
-    version = "0.0.1-SNAPSHOT"
+    version = "1.0.0"
 }
 
 ignitionModule {
@@ -37,7 +37,7 @@ ignitionModule {
      */
     moduleVersion.set("${project.version}")
 
-    moduleDescription.set("A short sentence describing what it does, but not much longer than this.")
+    moduleDescription.set("This module reads OIDs via SNMP from hardware devices.")
 
     /*
      * Minimum version of Ignition required for the module to function correctly.  This typically won't change over

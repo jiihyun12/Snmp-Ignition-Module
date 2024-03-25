@@ -20,7 +20,16 @@ import org.snmp4j.Snmp;
 import org.snmp4j.event.ResponseEvent;
 import org.snmp4j.mp.MPv3;
 import org.snmp4j.mp.SnmpConstants;
+import org.snmp4j.security.AuthHMAC128SHA224;
+import org.snmp4j.security.AuthHMAC192SHA256;
+import org.snmp4j.security.AuthHMAC256SHA384;
+import org.snmp4j.security.AuthHMAC384SHA512;
 import org.snmp4j.security.AuthMD5;
+import org.snmp4j.security.AuthSHA;
+import org.snmp4j.security.AuthSHA2;
+import org.snmp4j.security.PrivAES128;
+import org.snmp4j.security.PrivAES192;
+import org.snmp4j.security.PrivAES256;
 import org.snmp4j.security.PrivDES;
 import org.snmp4j.security.SecurityLevel;
 import org.snmp4j.security.SecurityModels;
@@ -109,7 +118,41 @@ public class NorcalSNMPDriverModule {
     	} else {
     		return SecurityLevel.NOAUTH_NOPRIV;
     	}
-    }    
+    }   
+    
+    private static OID getAuthProtocol(int i) {
+    	switch (i) {
+	    	case 1: 
+	    		return AuthMD5.ID;
+	    	case 2:
+	    		return AuthSHA.ID;
+	    	case 3:
+	    		return AuthHMAC128SHA224.ID;
+	    	case 4:
+	    		return AuthHMAC192SHA256.ID;
+	    	case 5:
+	    		return AuthHMAC256SHA384.ID;
+	    	case 6:
+	    		return AuthHMAC384SHA512.ID;
+	    	default:
+	    		return AuthHMAC384SHA512.ID;
+    	}
+    }
+    
+    private static OID getPrivProtocol(int i) {
+    	switch(i) {
+	    	case 1:
+	    		return PrivDES.ID;
+	    	case 2:
+	    		return PrivAES128.ID;
+	    	case 3:
+	    		return PrivAES192.ID;
+	    	case 4:
+	    		return PrivAES256.ID;
+	    	default:
+	    		return PrivAES256.ID;
+    	}
+    }
 
     public static String[] snmpGet(String ip, int port, String[] oids, String[] params) { /// if anyone knows how to get rid of the first item from an array please let me know
     	String community = params[0];
@@ -119,8 +162,10 @@ public class NorcalSNMPDriverModule {
         return get(pdu, target);
     }
     
-    public static String[] snmpGetV3(String ip, int port, String[] oids, int authLevel, String user, String pass, String[] params) {
+    public static String[] snmpGetV3(String ip, int port, String[] oids, int authLevel, String user, String pass, int authProt, int privProt, String[] params) {
     	UserTarget target = createDefault(ip, authLevel, user, pass, port, params);
+    	OID authProtocol = getAuthProtocol(authProt);
+    	OID privProtocol = getPrivProtocol(privProt);  
     	PDU pdu = new ScopedPDU();
     	pdu.addAll(getBindings(oids));
     	UsmUser usr = new UsmUser(
@@ -130,7 +175,7 @@ public class NorcalSNMPDriverModule {
     			PrivDES.ID,
     			new OctetString(pass)
 		);
-    	return getV3(pdu, target, usr, user);
+    	return getV3(pdu, target, usr, user, authProtocol);
     }
 
     private static VariableBinding[] getBindings(String[] oids) {
@@ -175,8 +220,13 @@ public class NorcalSNMPDriverModule {
         }
     }
     
-    private static String[] getV3(PDU pdu, UserTarget target, UsmUser usr, String username) {
-    	SecurityProtocols.getInstance().addAuthenticationProtocol(new AuthMD5());
+    private static String[] getV3(PDU pdu, UserTarget target, UsmUser usr, String username, OID authProt) {
+    	if (authProt == AuthMD5.ID) {
+    		SecurityProtocols.getInstance().addAuthenticationProtocol(new AuthMD5());
+    	}
+    	else if (authProt == AuthSHA.ID) {
+    		SecurityProtocols.getInstance().addAuthenticationProtocol(new AuthSHA());
+    	}
     	Snmp snmp= null;
     	ArrayList<String> res = new ArrayList<>();
     	

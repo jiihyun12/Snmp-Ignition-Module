@@ -36,11 +36,13 @@ public abstract class AbstractScriptModule implements FunctionInterface {
     		@ScriptArg("authLevel") int authLevel,
     		@ScriptArg("user") String user,
     		@ScriptArg("pass") String pass,
+    		@ScriptArg("authProt") int authProt,
+    		@ScriptArg("privProt") int privProt,
     		@ScriptArg("Others") String... params)
     {
-    	return NorcalSNMPDriverModule.snmpGetV3(addr, port, OIDS, authLevel, user, pass, params);
+    	return NorcalSNMPDriverModule.snmpGetV3(addr, port, OIDS, authLevel, user, pass, authProt, privProt, params);
     }
     
-    protected abstract String[] getImplV3(String addr, int port, String[] OIDS, int authLevel, String user, String pass, String... params); 
+    protected abstract String[] getImplV3(String addr, int port, String[] OIDS, int authLevel, String user, String pass, int authProt, int privProt, String... params); 
     
 }
