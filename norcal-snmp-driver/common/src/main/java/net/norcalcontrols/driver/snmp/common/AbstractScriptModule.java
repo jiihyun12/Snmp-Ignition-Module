@@ -20,7 +20,7 @@ public abstract class AbstractScriptModule implements FunctionInterface {
             @ScriptArg("address") String addr,
             @ScriptArg("port") int port,
             @ScriptArg("OID") String[] OIDS,
-            @ScriptArg("Others") String... params)
+            @ScriptArg("others") String... params)
     {
         return NorcalSNMPDriverModule.snmpGet(addr, port, OIDS, params);
     }
@@ -38,11 +38,41 @@ public abstract class AbstractScriptModule implements FunctionInterface {
     		@ScriptArg("pass") String pass,
     		@ScriptArg("authProt") int authProt,
     		@ScriptArg("privProt") int privProt,
-    		@ScriptArg("Others") String... params)
+    		@ScriptArg("others") String... params)
     {
     	return NorcalSNMPDriverModule.snmpGetV3(addr, port, OIDS, authLevel, user, pass, authProt, privProt, params);
     }
     
     protected abstract String[] getImplV3(String addr, int port, String[] OIDS, int authLevel, String user, String pass, int authProt, int privProt, String... params); 
     
+    @Override
+    @ScriptFunction
+    public String[] walk(
+    		@ScriptArg("address") String addr,
+    		@ScriptArg("port") int port,
+    		@ScriptArg("startOID") String startOID,
+    		@ScriptArg("others") String... params)
+    {
+    	return NorcalSNMPDriverModule.snmpWalk(addr, port, startOID, params);
+    }
+    
+    protected abstract String[] walkImpl(String addr, int port, String startOID, String... params);
+    
+    @Override
+    @ScriptFunction
+    public String[] walkV3(
+    		@ScriptArg("address") String addr,
+    		@ScriptArg("port") int port,
+    		@ScriptArg("startOID") String startOID,
+    		@ScriptArg("authLevel") int authLevel,
+    		@ScriptArg("user") String user,
+    		@ScriptArg("pass") String pass,
+    		@ScriptArg("authProt") int authProt,
+    		@ScriptArg("privProt") int privProt,
+    		@ScriptArg("others") String... params)
+    {
+    	return NorcalSNMPDriverModule.snmpWalkV3(addr, port, startOID, authLevel, user, pass, authProt, privProt, params);
+    }
+    
+    protected abstract String[] walkImplV3(String addr, int port, String startOID, int authLevel, String user, String pass, int authProt, int privProt, String... params);    
 }

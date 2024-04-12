@@ -11,6 +11,7 @@ package net.norcalcontrols.driver.snmp.common;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.List;
 
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.UserTarget;
@@ -43,6 +44,9 @@ import org.snmp4j.smi.OctetString;
 import org.snmp4j.smi.VariableBinding;
 import org.snmp4j.TransportMapping;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
+import org.snmp4j.util.DefaultPDUFactory;
+import org.snmp4j.util.TreeEvent;
+import org.snmp4j.util.TreeUtils;
 
 public class NorcalSNMPDriverModule {
     public static final String MODULE_ID = "net.norcalcontrols.driver.snmp.NorcalSNMPDriver";
@@ -153,6 +157,26 @@ public class NorcalSNMPDriverModule {
 	    		return PrivAES256.ID;
     	}
     }
+    
+    public static String[] snmpWalk(String ip, int port, String startOID, String[] params) {
+        String community = params[0];
+        CommunityTarget target = createDefault(ip, community, port, params);
+        return walk(target, new OID(startOID));
+    }
+    
+    public static String[] snmpWalkV3(String ip, int port, String startOID, int authLevel, String user, String pass, int authProt, int privProt, String[] params) {
+        UserTarget target = createDefault(ip, authLevel, user, pass, port, params);
+        OID authProtocol = getAuthProtocol(authProt);
+        OID privProtocol = getPrivProtocol(privProt);
+    	UsmUser usr = new UsmUser(
+    			new OctetString(user),
+    			authProtocol,
+    			new OctetString(pass),
+    			privProtocol,
+    			new OctetString(pass)
+		);
+        return walkV3(target, new OID(startOID), usr, user, authProtocol);
+    }
 
     public static String[] snmpGet(String ip, int port, String[] oids, String[] params) { /// if anyone knows how to get rid of the first item from an array please let me know
     	String community = params[0];
@@ -186,6 +210,100 @@ public class NorcalSNMPDriverModule {
 
         return vars.toArray(new VariableBinding[0]);
     }
+    
+    private static String[] walk(CommunityTarget target, OID startOID) {
+        ArrayList<String> results = new ArrayList<>();
+        Snmp snmp = null;
+
+        try {
+            DefaultUdpTransportMapping transport = new DefaultUdpTransportMapping();
+            snmp = new Snmp(transport);
+            snmp.listen();
+
+            TreeUtils treeUtils = new TreeUtils(snmp, new DefaultPDUFactory());
+            List<TreeEvent> events = treeUtils.getSubtree(target, startOID);
+
+            for (TreeEvent event : events) {
+                if (event != null) {
+                    if (event.isError()) {
+                        //System.err.println("Error: " + event.getErrorMessage());
+                    	results.add("Error: " + event.getErrorMessage());
+                    } else {
+                        VariableBinding[] varBindings = event.getVariableBindings();
+                        for (VariableBinding varBinding : varBindings) {
+                            results.add(varBinding.toString());
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (snmp != null) {
+                try {
+                    snmp.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return results.toArray(new String[0]);
+    }  
+    
+    private static String[] walkV3(UserTarget target, OID startOID, UsmUser usr, String username, OID authProt) {
+    	if (authProt == AuthMD5.ID) {
+    		SecurityProtocols.getInstance().addAuthenticationProtocol(new AuthMD5());
+    	}
+    	else if (authProt == AuthSHA.ID) {
+    		SecurityProtocols.getInstance().addAuthenticationProtocol(new AuthSHA());
+    	}
+        ArrayList<String> results = new ArrayList<>();
+        Snmp snmp = null;
+
+        try {
+            DefaultUdpTransportMapping transport = new DefaultUdpTransportMapping();
+            snmp = new Snmp(transport);
+            USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
+            SecurityModels.getInstance().addSecurityModel(usm);
+
+            // Add user to USM
+        	usm.addUser(
+        			new OctetString(username),
+        			usr
+            );
+
+            snmp.listen();
+
+            TreeUtils treeUtils = new TreeUtils(snmp, new DefaultPDUFactory());
+            List<TreeEvent> events = treeUtils.getSubtree(target, startOID);
+
+            for (TreeEvent event : events) {
+                if (event != null) {
+                    if (event.isError()) {
+                        System.err.println("Error: " + event.getErrorMessage());
+                    } else {
+                        VariableBinding[] varBindings = event.getVariableBindings();
+                        for (VariableBinding varBinding : varBindings) {
+                            results.add(varBinding.toString());
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (snmp != null) {
+                try {
+                    snmp.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return results.toArray(new String[0]);
+    }     
 
     private static String[] get(PDU pdu, CommunityTarget target) {
         Snmp snmp = null;
