@@ -3,9 +3,11 @@ A module that allows the user to use snmp operations in scripts
 
 This module has been migrated to gradle from Maven, so the namespace has changed.
 
-As of now there are only two operations available. SNMP Get and GetV3. 
-<br>Get can be called by using <code>system.snmp.get('address', port, ['OID1', 'OID2', ...], 'community')</code>, This will return a python list with the length equal to the number of OIDs provided.
-<br>GetV3 can be called by using <code>system.snmp.getV3('address', port, ['OID1', 'OID2', ...], authLevel, 'user', 'password', authProt, privProt)</code>, This will return a python list with the length equal to the number of OIDs provided.
+As of now there are only four operations available. SNMP Get, GetV3, Walk and WalkV3. 
+<br>Get can be called by using <code>system.snmp.get('address', port, ['OID1', 'OID2', ...], 'community')</code>. This will return a python list with the length equal to the number of OIDs provided.
+<br>Walk can be called by using <code>system.snmp.walk('address', port, 'startOID', 'community')</code>. This will return a python list with all OIDs and their current values with the OID specified.
+<br>GetV3 can be called by using <code>system.snmp.getV3('address', port, ['OID1', 'OID2', ...], authLevel, 'user', 'password', authProt, privProt)</code>. This will return a python list with the length equal to the number of OIDs provided.
+<br>WalkV3 can be called by using <code>system.snmp.walk('address', port, 'startOID', authLevel, 'user', 'password', authProt, privProt)</code>. This will return a python list with all OIDs and their current values with the OID specified.
 
 You can also specify other variables like the snmp version, timeout or retry count by adding 'var=value' as an extra parameter at the end.
 <br>For example <code> system.snmp.get('address', port, ['OID1', 'OID2'], 'community', 'version=1', 'timeout=2000', 'retry=2') </code>.
@@ -14,7 +16,7 @@ It will perform the get operation on version 1, with a timeout of 2000ms and a r
 
 If these variables are not given by the user it will use the defaults, meaning: version=2c, timeout=3000, retry=1.
 
-SNMPv3 support has been added using GetV3. Similarly to Get you may also specify other variables like timeout and retry by adding 'var=value' as an extra parameter at the end.
+SNMPv3 support has been added using GetV3 and WalkV3. Similarly to Get and Walk you may also specify other variables like timeout and retry by adding 'var=value' as an extra parameter at the end.
 The version and community are not supported in V3 as it uses a username and password for authorization. 
 <br>For example <code> system.snmp.getV3('address, port, ['OID1', 'OID2', ...], authLevel, 'user', 'password', authProt, privProt, 'timeout=2000', 'retry=2') </code>
 <br>This will return a python list with the length of 2 containing the values of OID1 and OID2, or an error message.
