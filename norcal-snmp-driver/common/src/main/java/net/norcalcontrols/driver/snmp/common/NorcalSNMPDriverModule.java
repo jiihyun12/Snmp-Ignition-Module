@@ -47,6 +47,7 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 import org.snmp4j.util.DefaultPDUFactory;
 import org.snmp4j.util.TreeEvent;
 import org.snmp4j.util.TreeUtils;
+import org.snmp4j.smi.UdpAddress;
 
 public class NorcalSNMPDriverModule {
     public static final String MODULE_ID = "net.norcalcontrols.driver.snmp.NorcalSNMPDriver";
@@ -398,4 +399,49 @@ public class NorcalSNMPDriverModule {
     	}
     }
 
+    // 20250909 추가
+    public static String[] snmpBulk(String addr, int port, String baseOid, int nonRepeaters, int maxReps, String... params) {
+        String community = params.length > 0 ? params[0] : "public";
+        int timeout = params.length > 1 ? Integer.parseInt(params[1]) : 3000;
+        int retries  = params.length > 2 ? Integer.parseInt(params[2]) : 1;
+
+        List<String> out = new ArrayList<>();
+        Snmp snmp = null;
+        try {
+            Address targetAddress = GenericAddress.parse("udp:" + addr + "/" + port);
+            TransportMapping<UdpAddress> transport = new DefaultUdpTransportMapping();
+            snmp = new Snmp(transport);
+            transport.listen();
+
+            CommunityTarget target = new CommunityTarget();
+            target.setCommunity(new OctetString(community));
+            target.setAddress(targetAddress);
+            target.setVersion(SnmpConstants.version2c);
+            target.setTimeout(timeout);
+            target.setRetries(retries);
+
+            // GETBULK: 컬럼 루트 OID 기준으로 빠르게 긁어오기
+            DefaultPDUFactory factory = new DefaultPDUFactory(PDU.GETBULK);
+            factory.setMaxRepetitions(maxReps); // 25~50부터 시도 권장
+            TreeUtils tree = new TreeUtils(snmp, factory);
+
+            // TreeUtils 경로에선 nonRepeaters를 별도 지정할 곳이 없어 보통 0 사용
+            List<TreeEvent> events = tree.getSubtree(target, new OID(baseOid));
+            if (events != null) {
+                for (TreeEvent ev : events) {
+                    if (ev == null || ev.isError()) continue;
+                    VariableBinding[] vbs = ev.getVariableBindings();
+                    if (vbs == null) continue;
+                    for (VariableBinding vb : vbs) {
+                        out.add(vb.getOid().toDottedString() + " = " + vb.getVariable().toString());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            out.add("ERROR: " + e.getMessage());
+        } finally {
+            try { if (snmp != null) snmp.close(); } catch (Exception ignore) {}
+        }
+        return out.toArray(new String[0]);
+    }
 }

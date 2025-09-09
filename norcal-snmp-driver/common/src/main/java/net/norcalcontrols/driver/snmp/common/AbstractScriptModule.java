@@ -75,4 +75,25 @@ public abstract class AbstractScriptModule implements FunctionInterface {
     }
     
     protected abstract String[] walkImplV3(String addr, int port, String startOID, int authLevel, String user, String pass, int authProt, int privProt, String... params);    
+
+    // 20250909 추가 ==============================================================
+    // --- NEW: GETBULK 구현 훅 (v2c)
+    protected String[] bulkImpl(String addr, int port, String baseOid, int nonRepeaters, int maxReps, String... params) {
+        throw new UnsupportedOperationException("GETBULK not implemented");
+    }
+
+    @Override
+    @ScriptFunction
+    public String[] getBulk(
+            @ScriptArg("address") String addr,
+            @ScriptArg("port") int port,
+            @ScriptArg("baseOid") String baseOid,
+            @ScriptArg("nonRepeaters") int nonRepeaters,
+            @ScriptArg("maxReps") int maxReps,
+            @ScriptArg("community/others") String... params // community, timeout, retries
+    ) {
+        return NorcalSNMPDriverModule.snmpBulk(addr, port, baseOid, nonRepeaters, maxReps, params);
+    }
+
+
 }
