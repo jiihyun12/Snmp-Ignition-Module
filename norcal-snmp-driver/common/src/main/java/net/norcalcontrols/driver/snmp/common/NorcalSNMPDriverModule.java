@@ -443,5 +443,6 @@ public class NorcalSNMPDriverModule {
             try { if (snmp != null) snmp.close(); } catch (Exception ignore) {}
         }
         return out.toArray(new String[0]);
+        
     }
 }
