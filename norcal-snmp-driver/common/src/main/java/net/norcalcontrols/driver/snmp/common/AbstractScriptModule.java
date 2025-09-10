@@ -82,7 +82,6 @@ public abstract class AbstractScriptModule implements FunctionInterface {
         throw new UnsupportedOperationException("GETBULK not implemented");
     }
 
-    @Override
     @ScriptFunction
     public String[] getBulk(
             @ScriptArg("address") String addr,
