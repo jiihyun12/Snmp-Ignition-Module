@@ -19,3 +19,4 @@ public class NorcalSNMPDriverDesignerHook extends AbstractDesignerModuleHook {
                 new PropertiesFileDocProvider());
     }
 }
+
